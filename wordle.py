@@ -63,7 +63,7 @@ def main(args):
       test_wordles()
       return
   word = random.choice(answer_words)
-  print (word)
+  #print (word)
   w = Wordle(word)
   while not w.solved:
     i = len(w.guesses)

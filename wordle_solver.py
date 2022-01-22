@@ -1,21 +1,26 @@
-import sys, random
+import sys, random, string
 from collections import Counter
 from wordle_data import valid_words, answer_words
 from wordle import Wordle
+
+
+rand123 = random.Random(1234)
 
 class NaiveWordleSolver(object):
   def __init__(self, root, result):
     self.answer_set = set(answer_words)
     self.guesses = [(root, result)]
     self.removed = set()
+    self.unknowns = set(string.ascii_lowercase)
   def feed(self, guess, result):
     self.guesses.append((guess, result))
   def next(self):
-    return random.choice(list(self.answer_set))
+    return rand123.choice(list(self.answer_set))
   def prune(self):
     # collapse greens
     result = ['_']*5
     freqs = Counter()
+    included = set()
     for (g,c) in self.guesses:
       lfreq = Counter()
       for (i,a) in enumerate(g):
@@ -34,63 +39,112 @@ class NaiveWordleSolver(object):
       for a in lfreq:
         freqs[a] = max(freqs[a], lfreq[a])
     # collect reds, but consider frequency
-    reds = set()
     for (g,c) in self.guesses:
       for (i,a) in enumerate(g):
         if c[i] == '_' and freqs[a] == 0:
           self.removed.add(a)
-    pruned = set()
+    knowns = set()
+    for (g,c) in self.guesses:
+      knowns = knowns| set(g)
+    self.unknowns = self.unknowns - knowns
+    pruned_set = set()
     position_miss = 0
     missing_letters = 0
     frequency_miss = 0
+    already = set([g for (g,c) in self.guesses])
     for word in self.answer_set:
+      prune = False
+      if word in already:
+        prune = True
       for c in self.removed:
+        if prune:
+          break
         if c in word:
-          pruned.add(word) 
+          prune = True
           missing_letters += 1
       for (i,c) in enumerate(result):
+        if prune:
+          break
         if c != '_' and word[i] != c:
-          pruned.add(word)
+          prune = True
           position_miss += 1
       wfreq = Counter(word)
       for c in freqs:
+        if prune:
+          break
         if wfreq[c] < freqs[c]:
-          if word == "lease":
-            print (c, wfreq, freqs)
-            print("WTF 3")
-          pruned.add(word)
+          prune = True
           frequency_miss += 1
-    print ("Missing letter: {}".format(missing_letters))
-    print ("Position miss: {}".format(position_miss))
-    print ("Freuency miss: {}".format(frequency_miss))
-    self.answer_set = self.answer_set - pruned
-    print("Pruned {} words, answer_set has {} items".format(len(pruned), len(self.answer_set)))
-    if len(self.answer_set) < 16:
-      print(self.answer_set)
+      if not prune:
+        pruned_set.add(word)
+    pruned_count = len(self.answer_set) - len(pruned_set)
+    self.answer_set = pruned_set
+    print("Reduced to {} words, answer_set has {} items".format(len(pruned_set), len(self.answer_set)))
+    print("Unknowns left : {}".format("".join(sorted(self.unknowns))))
+    return pruned_count 
 
-      
-  def __repr__(self):
-    return ""
+class UnknownsWordleSolver(NaiveWordleSolver):
+  def __init__(self, root, result):
+    super().__init__(root, result)
+  def rank_unknowns(self, option):
+    commons = set(self.unknowns) & set("aeiourtpsh")
+    r = lambda c: ((c in commons) and 2) or 1
+    return -1*sum([r(c) for c in self.unknowns if c in option])
+  def next(self):
+    # pick maximum unknowns
+    if (len(self.answer_set) > 64):
+      return sorted(valid_words, key=lambda k : self.rank_unknowns(k))[0] 
+    return sorted(self.answer_set, key=lambda k : self.rank_unknowns(k))[0]
 
 def main(args):
-  word = random.choice(answer_words)
-  word = "lease"
-  print (word)
-  wp = Wordle(word)
-  guess0 = random.choice(list(valid_words))
-  guess0 = "blast"
-  result0 = wp.check(guess0)
-  wp.append(guess0)
-  print ("Randomly guessing {} : {}".format(guess0,result0))
-  ws = NaiveWordleSolver(guess0, result0)
-  ws.prune()
-  while not wp.solved:
-    guess = ws.next()
-    result = wp.check(guess)
-    wp.append(guess)
-    print ("Randomly guessing {} : {}".format(guess,result))
-    ws.feed(guess, result)
+  if len(args) == 1:
+    n = int(args[0])
+    return test(n)
+  else:
+    wguess = input("Enter guess word: ")
+    wresult = input("Enter result: ")
+    ws = UnknownsWordleSolver(wguess, wresult)
     ws.prune()
+    while len(ws.answer_set)>1:
+      print (ws.answer_set)
+      wguess = input("Enter guess word: ")
+      wresult = input("Enter result: ")
+      ws.feed(wguess, wresult)
+      ws.prune()
+    print (ws.answer_set)
+
+
+
+def test(n):
+  maxsteps = 0
+  totalsteps = 0.0
+  hard = []
+  for i in range(n):
+    steps = 1
+    word = random.choice(answer_words)
+    print (word)
+    wp = Wordle(word)
+    guess0 = random.choice(list(valid_words))
+    guess0 = "route"
+    result0 = wp.check(guess0)
+    wp.append(guess0)
+    print ("Randomly guessing {} : {}".format(guess0,result0))
+    ws = UnknownsWordleSolver(guess0, result0)
+    ws.prune()
+    while not wp.solved:
+      guess = ws.next()
+      result = wp.check(guess)
+      wp.append(guess)
+      print ("Randomly guessing {} : {}".format(guess,result))
+      ws.feed(guess, result)
+      ws.prune()
+      steps += 1
+    maxsteps = max(steps, maxsteps)
+    totalsteps = totalsteps + steps
+    if (steps > 6):
+        hard.append(word)
+  print("Completed {} iterations, max = {}, avg = {}".format(n, maxsteps, totalsteps/n))
+  print("Hard words = {}".format(set(hard)))
 
 
 if __name__ == "__main__":
