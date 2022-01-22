@@ -32,7 +32,7 @@ class Wordle(object):
             lcounts[l] -= 1
             result[i] = 'Y'
     return "".join(result)
-  def print(self):
+  def output(self):
     green = lambda s : "\033[01m\033[93m{}\033[00m".format(s)
     yellow = lambda s : "\033[01m\033[93m{}\033[00m".format(s)
     for (g,r) in self.guesses:
@@ -55,7 +55,7 @@ def test_wordles():
   w.append("traps")
   w.append("olleh")
   w.append("aioli")
-  w.print()
+  w.output()
 
         
 def main(args): 
@@ -69,7 +69,7 @@ def main(args):
     i = len(w.guesses)
     guess = input("[{}] Enter guess:".format(i))
     w.append(guess)
-    w.print()
+    w.output()
   
 
 if __name__ == "__main__":
