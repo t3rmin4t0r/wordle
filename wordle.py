@@ -1,4 +1,4 @@
-import sys
+import sys, random
 from collections import Counter
 from wordle_data import valid_words, answer_words
 
@@ -8,9 +8,17 @@ class Wordle(object):
     self.word = word
     self.counts = Counter(word) 
     self.guesses = []
+    self.solved = False
   def append(self, guess):
-    self.guesses.append((guess, self.check(guess)))
+    c = self.check(guess)
+    if c:
+      self.guesses.append((guess, c))
+      if c == 'G' * 5:
+        self.solved = True
   def check(self, guess):
+    if guess not in valid_words:
+        print("Not valid word", guess)
+        return None
     lcounts = Counter(self.counts)
     result = ['_']*len(self.word)
     # first mark the greens
@@ -24,17 +32,47 @@ class Wordle(object):
             lcounts[l] -= 1
             result[i] = 'Y'
     return "".join(result)
+  def print(self):
+    green = lambda s : "\033[01m\033[93m{}\033[00m".format(s)
+    yellow = lambda s : "\033[01m\033[93m{}\033[00m".format(s)
+    for (g,r) in self.guesses:
+      line = ""
+      for (l,c) in zip(g,r):
+        if c == 'G':
+          line = line+green(l)
+        elif c == 'Y':
+          line  = line+yellow(l)
+        else:
+          line  = line + l
+      print(line, r)
+    
 
 def test_wordles():
   w = Wordle("hello")
   assert "_"*5 == w.check("traps")
-  assert "YYGYY" == w.check("olleh")
+  assert None == w.check("olleh")
+  assert "__YG_" == w.check("aioli")
+  w.append("traps")
+  w.append("olleh")
+  w.append("aioli")
+  w.print()
 
         
 def main(args): 
   if (len(args) > 0 and args[0] == "test"):
       test_wordles()
-  pass
+      return
+  word = random.choice(answer_words)
+  print (word)
+  w = Wordle(word)
+  while not w.solved:
+    i = len(w.guesses)
+    guess = input("[{}] Enter guess:".format(i))
+    w.append(guess)
+    w.print()
+  
 
 if __name__ == "__main__":
   main(sys.argv[1:])
+
+# vim: tabstop=2 expandtab shiftwidth=2 softtabstop=2
