@@ -33,8 +33,8 @@ class Wordle(object):
             result[i] = 'Y'
     return "".join(result)
   def output(self):
-    green = lambda s : "\033[01m\033[93m{}\033[00m".format(s)
-    yellow = lambda s : "\033[01m\033[93m{}\033[00m".format(s)
+    green = lambda s : "\033[01m\033[102m{}\033[00m".format(s)
+    yellow = lambda s : "\033[01m\033[103m{}\033[00m".format(s)
     for (g,r) in self.guesses:
       line = ""
       for (l,c) in zip(g,r):
