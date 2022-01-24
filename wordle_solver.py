@@ -92,7 +92,7 @@ class UnknownsWordleSolver(NaiveWordleSolver):
     return -1*sum([r(c) for c in self.unknowns if c in option])
   def next(self):
     # pick maximum unknowns
-    if (len(self.answer_set) > 64):
+    if (len(self.answer_set) > 64 and len(self.guesses) < 3):
       return sorted(valid_words, key=lambda k : self.rank_unknowns(k))[0] 
     return sorted(self.answer_set, key=lambda k : self.rank_unknowns(k))[0]
 
