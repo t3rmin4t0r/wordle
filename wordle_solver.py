@@ -79,8 +79,8 @@ class NaiveWordleSolver(object):
         pruned_set.add(word)
     pruned_count = len(self.answer_set) - len(pruned_set)
     self.answer_set = pruned_set
-    print("Reduced to {} words, answer_set has {} items".format(len(pruned_set), len(self.answer_set)))
-    print("Unknowns left : {}".format("".join(sorted(self.unknowns))))
+    #print("Reduced to {} words, answer_set has {} items".format(len(pruned_set), len(self.answer_set)))
+    #print("Unknowns left : {}".format("".join(sorted(self.unknowns))))
     return pruned_count 
 
 class UnknownsWordleSolver(NaiveWordleSolver):
@@ -138,7 +138,7 @@ def solve(word):
     print (word)
     wp = Wordle(word)
     guess0 = random.choice(list(valid_words))
-    guess0 = "route"
+    guess0 = "later"
     result0 = wp.check(guess0)
     wp.append(guess0)
     print ("Randomly guessing {} : {}".format(guess0,result0))
