@@ -12,6 +12,7 @@ class NaiveWordleSolver(object):
     self.guesses = [(root, result)]
     self.removed = set()
     self.unknowns = set(string.ascii_lowercase)
+    self.frequency = Counter()
   def feed(self, guess, result):
     self.guesses.append((guess, result))
   def next(self):
@@ -20,24 +21,26 @@ class NaiveWordleSolver(object):
     # collapse greens
     result = ['_']*5
     freqs = Counter()
-    included = set()
+    nots = [set() for x in range(5)]
     for (g,c) in self.guesses:
-      lfreq = Counter()
+      gfreq = Counter()
       for (i,a) in enumerate(g):
         if c[i] == 'G':
           result[i] = a
-          lfreq[a] += 1
-      for a in lfreq:
-        freqs[a] = max(freqs[a], lfreq[a])
+          gfreq[a] += 1
+      for a in gfreq:
+        freqs[a] = max(freqs[a], gfreq[a])
     # collect yellows
     for (g,c) in self.guesses:
       # freq for the yellow (this might overlap the greens)
-      lfreq = Counter()
+      yfreq = Counter()
       for (i,a) in enumerate(g):
         if c[i] == 'Y':
-          lfreq[a] += 1
-      for a in lfreq:
-        freqs[a] = max(freqs[a], lfreq[a])
+          yfreq[a] += 1
+          nots[i].add(a)
+      for a in yfreq:
+        freqs[a] = max(freqs[a], yfreq[a])
+    self.frequency = freqs
     # collect reds, but consider frequency
     for (g,c) in self.guesses:
       for (i,a) in enumerate(g):
@@ -68,6 +71,12 @@ class NaiveWordleSolver(object):
         if c != '_' and word[i] != c:
           prune = True
           position_miss += 1
+      for (i,c) in enumerate(word):
+        if prune:
+          break
+        if nots[i] and c in nots[i]:
+          prune = True
+          position_miss += 1
       wfreq = Counter(word)
       for c in freqs:
         if prune:
@@ -87,12 +96,17 @@ class UnknownsWordleSolver(NaiveWordleSolver):
   def __init__(self, root, result):
     super().__init__(root, result)
   def rank_unknowns(self, option):
-    commons = set(self.unknowns) & set("aeiourtpsh")
-    r = lambda c: ((c in commons) and 2) or 1
-    return -1*sum([r(c) for c in self.unknowns if c in option])
+    commons = set(self.unknowns) | set("aeiourtpsh")
+    order = 'qxjzvfkbghmpcyduwntlirsoae'
+    r = lambda c : 1+order.index(c)
+    score = -1*sum([r(c) for c in self.unknowns if c in option])
+    return score
   def next(self):
     # pick maximum unknowns
-    if (len(self.answer_set) > 64 and len(self.guesses) < 3):
+    if (len(self.answer_set) == 1):
+      return list(self.answer_set)[0]
+    self.unknowns = set("".join(self.answer_set)) - set(self.frequency)
+    if (self.unknowns and len(self.unknowns) < 13):
       avoid = set(dict(self.guesses))
       return sorted([v for v in valid_words if v not in avoid], key=lambda k : self.rank_unknowns(k))[0]
     return sorted(self.answer_set, key=lambda k : self.rank_unknowns(k))[0]
@@ -138,7 +152,7 @@ def solve(word):
     print (word)
     wp = Wordle(word)
     guess0 = random.choice(list(valid_words))
-    guess0 = "later"
+    guess0 = "route"
     result0 = wp.check(guess0)
     wp.append(guess0)
     print ("Randomly guessing {} : {}".format(guess0,result0))
