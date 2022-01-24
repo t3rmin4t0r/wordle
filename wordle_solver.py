@@ -98,8 +98,12 @@ class UnknownsWordleSolver(NaiveWordleSolver):
 
 def main(args):
   if len(args) == 1:
-    n = int(args[0])
-    return test(n)
+    if args[0][0] in "123456789":
+      n = int(args[0])
+      return test(n)
+    else:
+      steps = solve(args[0])
+      print("Took {} steps".format(len(steps)))
   else:
     wguess = input("Enter guess word: ")
     wresult = input("Enter result: ")
@@ -120,8 +124,16 @@ def test(n):
   totalsteps = 0.0
   hard = []
   for i in range(n):
-    steps = 1
     word = random.choice(answer_words)
+    steps = solve(word)
+    maxsteps = max(len(steps), maxsteps)
+    totalsteps = totalsteps + len(steps)
+    if (len(steps) > 6):
+        hard.append(word)
+  print("Completed {} iterations, max = {}, avg = {}".format(n, maxsteps, totalsteps/n))
+  print("Hard words = {}".format(set(hard)))
+
+def solve(word):
     print (word)
     wp = Wordle(word)
     guess0 = random.choice(list(valid_words))
@@ -138,13 +150,7 @@ def test(n):
       print ("Randomly guessing {} : {}".format(guess,result))
       ws.feed(guess, result)
       ws.prune()
-      steps += 1
-    maxsteps = max(steps, maxsteps)
-    totalsteps = totalsteps + steps
-    if (steps > 6):
-        hard.append(word)
-  print("Completed {} iterations, max = {}, avg = {}".format(n, maxsteps, totalsteps/n))
-  print("Hard words = {}".format(set(hard)))
+    return ws.guesses
 
 
 if __name__ == "__main__":
