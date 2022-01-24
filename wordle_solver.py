@@ -93,7 +93,8 @@ class UnknownsWordleSolver(NaiveWordleSolver):
   def next(self):
     # pick maximum unknowns
     if (len(self.answer_set) > 64 and len(self.guesses) < 3):
-      return sorted(valid_words, key=lambda k : self.rank_unknowns(k))[0] 
+      avoid = set(dict(self.guesses))
+      return sorted([v for v in valid_words if v not in avoid], key=lambda k : self.rank_unknowns(k))[0]
     return sorted(self.answer_set, key=lambda k : self.rank_unknowns(k))[0]
 
 def main(args):
