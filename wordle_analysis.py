@@ -7,9 +7,10 @@ from wordle_solver import NaiveWordleSolver
 import timeit
 
 def pruning_ranking():
-  for guess in valid_words:
+  for guess in ["route"]: #valid_words:
     start = timeit.default_timer()  
     max_pruning = 0
+    min_pruning = len(answer_words) + 1
     total_pruning = 0
     for word in answer_words:
       if guess == word: 
@@ -20,14 +21,18 @@ def pruning_ranking():
       ws = NaiveWordleSolver(guess, result)
       n = ws.prune()
       max_pruning = max(n, max_pruning)
+      min_pruning = min(n, min_pruning)
       total_pruning += n
     stop = timeit.default_timer()
     print (stop - start, guess, total_pruning, max_pruning)
-    yield (guess, total_pruning, max_pruning)
+    yield (guess, total_pruning, max_pruning, min_pruning)
 
 def main(args):
-  for (guess, total, maximum) in pruning_ranking():
-    print (guess, total,maximum)
+  aw_len = len(answer_words)
+  for (guess, total, maximum, minimum) in pruning_ranking():
+    selectivity = ((100.0*(aw_len - (total/aw_len)))/aw_len)
+    print (guess, selectivity)
+    print ("min={}, max={}".format(minimum, maximum))
 
 
 
